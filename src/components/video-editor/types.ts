@@ -380,16 +380,24 @@ export function extendAutoFullTrackClip(
 /** Convert clip regions (kept segments) to trim regions (gaps to remove). */
 export function clipsToTrims(clips: ClipRegion[], totalDurationMs: number): TrimRegion[] {
 	if (clips.length === 0) return [];
-	const sorted = [...clips].sort((a, b) => a.startMs - b.startMs);
+	// Clips are ordered on the timeline, but a moved clip keeps its source
+	// in-point, so timeline order says nothing about source order. Walk the
+	// source ranges the clips claim and trim whatever is left uncovered.
+	const coveredSpans = clips
+		.map((clip) => ({
+			startMs: getClipSourceStartMs(clip),
+			endMs: getClipSourceEndMs(clip),
+		}))
+		.filter((span) => span.endMs > span.startMs)
+		.sort((left, right) => left.startMs - right.startMs);
 	const trims: TrimRegion[] = [];
 	let cursor = 0;
 	let trimId = 1;
-	for (const clip of sorted) {
-		const sourceStartMs = getClipSourceStartMs(clip);
-		if (sourceStartMs > cursor) {
-			trims.push({ id: `trim-gap-${trimId++}`, startMs: cursor, endMs: sourceStartMs });
+	for (const span of coveredSpans) {
+		if (span.startMs > cursor) {
+			trims.push({ id: `trim-gap-${trimId++}`, startMs: cursor, endMs: span.startMs });
 		}
-		cursor = getClipSourceEndMs(clip);
+		cursor = Math.max(cursor, span.endMs);
 	}
 	if (cursor < totalDurationMs) {
 		trims.push({ id: `trim-gap-${trimId++}`, startMs: cursor, endMs: totalDurationMs });
