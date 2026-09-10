@@ -6,6 +6,7 @@ import type {
 	ClipRegion,
 	ZoomRegion,
 } from "../../types";
+import { getClipSourceStartMs } from "../../types";
 import { CAPTION_ROW_ID, CLIP_ROW_ID, ZOOM_ROW_ID } from "../core/constants";
 import {
 	getAnnotationTrackIndex,
@@ -70,7 +71,7 @@ export function buildTimelineItems(params: {
 			id: region.id,
 			rowId: CLIP_ROW_ID,
 			span: { start: region.startMs, end: region.endMs },
-			sourceSpan: { start: region.startMs, end: sourceEndMs },
+			sourceSpan: { start: getClipSourceStartMs(region), end: sourceEndMs },
 			label: speedLabel ? `Clip ${index + 1} ${speedLabel}` : `Clip ${index + 1}`,
 			speedValue: speedLabel ? speed : undefined,
 			showSourceAudio: region.showSourceAudio,
